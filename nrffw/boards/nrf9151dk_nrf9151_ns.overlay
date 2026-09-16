@@ -1,0 +1,154 @@
+
+/* copied from NRF samples so we do not need to rely on those */
+
+/*
+ * Copyright (c) 2026 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ */
+
+/delete-node/ &boot_partition;
+/delete-node/ &slot0_partition;
+/delete-node/ &slot1_partition;
+/delete-node/ &tfm_ps_partition;
+/delete-node/ &tfm_its_partition;
+/delete-node/ &tfm_otp_partition;
+/delete-node/ &storage_partition;
+
+&flash0 {
+	/*
+	 * 0x0000_0000  Primary area			(992 kB)
+	 *   0x0000_0000  Primary secure image		( 32 kB)
+	 *   0x0000_8000  Primary non-secure image	(960 kB)
+	 * 0x000f_8000  Settings storage		( 32 kB)
+	 */
+	partitions {
+		ranges;
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		slot0_partition: partition@0 {
+			compatible = "zephyr,mapped-partition";
+			label = "image-0";
+			reg = <0x00000000 0xf8000>;
+			ranges = <0x0 0x00000000 0xf8000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			slot0_s_partition: partition@0 {
+				compatible = "zephyr,mapped-partition";
+				label = "image-0-secure";
+				reg = <0x00000000 0x8000>;
+			};
+
+			slot0_ns_partition: partition@8000 {
+				compatible = "zephyr,mapped-partition";
+				label = "image-0-nonsecure";
+				reg = <0x00008000 0xf0000>;
+			};
+		};
+
+		storage_partition: partition@f8000 {
+			compatible = "zephyr,mapped-partition";
+			label = "storage";
+			reg = <0x000f8000 0x8000>;
+		};
+	};
+};
+
+/*
+ * Copyright (c) 2026 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ */
+
+/delete-node/ &sram0_s;
+/delete-node/ &sram0_ns;
+
+&sram0 {
+	/*
+	 * 0x2000_0000  Secure RAM                      (   32 kB)
+	 * 0x2000_8000  Non-secure RAM area             (  224 kB)
+	 *   0x2000_8000  Modem shared area             ( 17768 B)
+	 *     0x2000_8000  control                     (  1256 B)
+	 *     0x2000_84e8  app -> cell                 (  8320 B)
+	 *     0x2000_a568  cell -> app                 (    8 kB)
+	 *   0x2000_c568  Application RAM               (211608 B)
+	 */
+	sram0_s: sram@0 {
+		reg = <0x0 0x8000>;
+	};
+
+	sram0_ns: sram@8000 {
+		reg = <0x8000 0x38000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x8000 0x38000>;
+
+		/* Must be in first 128 kB of RAM. */
+		sram0_ns_modem: sram0_ns@0 {
+			/* Modem (shared) memory */
+			reg = <0x0 0x4568>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x0 0x0 0x4568>;
+
+			cpuapp_cpucell_ipc_shm_ctrl: sram0_ns_modem@0 {
+				/* Modem IPC control */
+				reg = <0x0 0x4e8>;
+			};
+
+			cpuapp_cpucell_ipc_shm_heap: sram0_ns_modem@4e8 {
+				/* Modem IPC transmit */
+				reg = <0x4e8 0x2080>;
+			};
+
+			cpucell_cpuapp_ipc_shm_heap: sram0_ns_modem@2568 {
+				/* Modem IPC receive */
+				reg = <0x2568 0x2000>;
+			};
+		};
+
+		sram0_ns_app: sram0_ns@4568 {
+			/* Non-Secure application memory */
+			reg = <0x4568 0x33a98>;
+		};
+	};
+};
+
+&pinctrl {
+    i2c2_default: i2c2_default {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 0, 30)>,
+                    <NRF_PSEL(TWIM_SCL, 0, 31)>;
+            bias-pull-up;
+        };
+    };
+
+    i2c2_sleep: i2c2_sleep {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 0, 30)>,
+                    <NRF_PSEL(TWIM_SCL, 0, 31)>;
+            bias-pull-up;
+            low-power-enable;
+        };
+    };
+};
+
+/* This is for TWIM2 -- change to "i2c1" for TWIM1, etc. */
+&i2c2 {
+    compatible = "nordic,nrf-twim";
+    status = "okay";
+    pinctrl-0 = <&i2c2_default>;
+    pinctrl-1 = <&i2c2_sleep>;
+    pinctrl-names = "default", "sleep";
+    /* I2C_BITRATE_STANDARD = 100kHz. This just takes Hz as numeric value. */
+    clock-frequency = < 100000 >;
+    
+    sht45: sht45@44 {
+        compatible = "i2c-device";
+        reg = < 0x44 >;
+        label = "SHT45";
+    };
+};
+
