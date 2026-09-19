@@ -14,7 +14,7 @@
 #include <modem/location.h>
 #include <dk_buttons_and_leds.h>
 #include <zephyr/drivers/i2c.h>
-#include "sht4x.h"
+#include "larkws.h"
 
 #define HTTP_PORT 80
 #define HTTP_HOSTNAME "wetter.poempelfox.de"
@@ -207,16 +207,18 @@ int main(void)
 	}
 
 	/* Initialize sensor */
-	sht4x_init();
-	sht4x_startmeas();
+	larkws_init();
 
 	/* slightly more than 1 second should be plenty
 	 * for the SHT4x to finish measurement - datasheet say 8.3ms max. */
 	k_sleep(K_MSEC(1111));
-	struct sht4xdata temphumdata;
-	sht4x_read(&temphumdata);
-	printk("Read SHT4x sensor: valid %d; temp %.2f; hum %.2f%%\n",
-	       temphumdata.valid, temphumdata.temp, temphumdata.hum);
+	printk("Temperature: %.2lf (degC)\n", larkws_getvalue_double(LARKWS_TEMPERATURE));
+	printk("Humidity:    %.2lf (%%)\n", larkws_getvalue_double(LARKWS_HUMIDITY));
+	printk("Pressure:    %.2lf (hPa | mbar)\n", larkws_getvalue_double(LARKWS_PRESSURE));
+	printk("WindSpeed:   %.2lf (m/s)\n", larkws_getvalue_double(LARKWS_WINDSPEED));
+	char winddir[16];
+	larkws_getvalue_string(LARKWS_WINDDIR, winddir, sizeof(winddir));
+	printk("WindDir:     %s\n", winddir);
 
 	/* Turn on LTE */
 

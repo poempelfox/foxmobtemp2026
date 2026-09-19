@@ -142,13 +142,28 @@
     pinctrl-0 = <&i2c2_default>;
     pinctrl-1 = <&i2c2_sleep>;
     pinctrl-names = "default", "sleep";
-    /* I2C_BITRATE_STANDARD = 100kHz. This just takes Hz as numeric value. */
+    /* clock-frequency = I2C_BITRATE_STANDARD = 100kHz.
+     * This in principle just takes Hz as a numeric value.
+     * Unfortunately, the interface is extremely limited. You cannot set
+     * arbitrary values here, just 4 predefined ones are permitted.
+     * And the slowest of that is 100k, which is way too fast if you use
+     * slightly longer wires. We therefore set 100k here and then
+     * redefine "100k" to actually mean "10k" in the SDK include
+     * nrf9120_bitfields.h (which contains the actual register value
+     * programmed into the hardware). */
     clock-frequency = < 100000 >;
     
+    /* This was used for first tests and is now not used anymore */
     sht45: sht45@44 {
         compatible = "i2c-device";
         reg = < 0x44 >;
         label = "SHT45";
+    };
+    
+    larkws: larkws@42 {
+        compatible = "i2c-device";
+        reg = < 0x42 >;
+        label = "LARKWS";
     };
 };
 
