@@ -10,5 +10,5 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(foxmobtemp2026)
 
 # NORDIC SDK APP START
-target_sources(app PRIVATE src/main.c src/sht4x.c src/larkws.c)
+target_sources(app PRIVATE src/main.c src/sht4x.c src/larkws.c src/mobilenet.c)
 # NORDIC SDK APP END
